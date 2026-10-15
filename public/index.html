@@ -46,7 +46,7 @@ const shrink=(file,w,type)=>new Promise(res=>{const i=new Image();i.onload=()=>{
 /* ===== CUSTOMER ===== */
 function home(code){
  app.innerHTML=`<div class="card"><label>Masukkan kod khas pada kad member anda</label><input id="cc" placeholder="MKS-XXXXXX" value="${esc(code||'')}" autocapitalize="characters"><button id="cb" style="width:100%">Masuk</button></div><div id="cr"></div><p class="c mt" style="margin-top:28px"><a href="#" id="sl">Staff</a></p>`;
- $('#cb').onclick=check;$('#cc').onkeydown=e=>e.key==='Enter'&&check();$('#sl').onclick=e=>{e.preventDefault();T?staffUI():loginUI()};
+ $('#cb').onclick=check;$('#cc').onkeydown=e=>{if(e.key==='Enter')check()};$('#sl').onclick=e=>{e.preventDefault();T?staffUI():loginUI()};
  if(code)check();
 }
 async function check(){
@@ -67,7 +67,7 @@ function cust(d,r){
 function loginUI(){
  app.innerHTML=`<div class="card"><label>Password staff</label><input id="pw" type="password"><button id="lg" style="width:100%">Log Masuk</button></div><p class="c"><a href="/">← Kembali</a></p>`;
  const go=async()=>{try{const r=await API('login',{pw:$('#pw').value});T=r.t;localStorage.mks_t=T;staffUI()}catch(e){toast(e.message)}};
- $('#lg').onclick=go;$('#pw').onkeydown=e=>e.key==='Enter'&&go();
+ $('#lg').onclick=go;$('#pw').onkeydown=e=>{if(e.key==='Enter')go()};
 }
 function staffUI(){
  const TB=[['ahli','Ahli'],['baru','Baru'],['exp','Data'],['set','Tetapan']];
@@ -78,7 +78,7 @@ function staffUI(){
 }
 async function vAhli(){
  $('#v').innerHTML=`<div class="card"><label>Kod khas kad member</label><div class="row"><input id="sc" placeholder="Taip / scan kod" autocapitalize="characters"><button id="sb">Cari</button></div></div><div id="mem"></div><div class="card" id="lst"><label>Terkini</label></div>`;
- $('#sb').onclick=()=>openM($('#sc').value);$('#sc').onkeydown=e=>e.key==='Enter'&&openM(e.target.value);
+ $('#sb').onclick=()=>openM($('#sc').value);$('#sc').onkeydown=e=>{if(e.key==='Enter')openM(e.target.value)};
  try{const r=await API('recent');$('#lst').innerHTML='<label>Terkini</label>'+(r.l.map(m=>`<div class="li" data-c="${esc(m.c)}"><span>${esc(m.n)}<div class="mt">${esc(m.c)}</div></span><b style="color:var(--g)">${f(m.p)}</b></div>`).join('')||'<div class="mt">Belum ada ahli.</div>');
   document.querySelectorAll('[data-c]').forEach(x=>x.onclick=()=>openM(x.dataset.c))}catch(e){}
  if(cur)openM(cur);
