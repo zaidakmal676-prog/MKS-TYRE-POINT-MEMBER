@@ -1,0 +1,147 @@
+<!DOCTYPE html><html lang="ms"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MKS TYRE MEMBER POINT</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+:root{--bg:#070907;--card:#121612;--line:#223022;--g:#22c55e;--g2:#15803d;--tx:#ecfdf5;--mt:#86a08f;--bad:#f87171;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.w{max-width:560px;margin:0 auto;padding:14px}
+header{display:flex;align-items:center;gap:12px;padding:6px 0 14px;border-bottom:1px solid var(--line);margin-bottom:14px}
+header img{height:46px;max-width:100px;object-fit:contain}
+h1{font-size:17px;margin:0;letter-spacing:.5px;color:var(--g)}h1 small{display:block;color:var(--mt);font-weight:400;font-size:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+input,textarea{width:100%;background:#0b0f0b;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit;margin:4px 0 8px}
+input:focus,textarea:focus{outline:2px solid var(--g2);border-color:var(--g)}
+label{font-size:12px;color:var(--mt)}a{color:var(--g)}
+button{background:var(--g);color:#04130a;border:0;border-radius:10px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer}
+button.o{background:transparent;color:var(--g);border:1px solid var(--g2)}button:disabled{opacity:.5}
+.row{display:flex;gap:8px}.row>*{flex:1}.row>button{flex:0 0 auto}
+.tabs{display:flex;gap:6px;margin-bottom:12px}.tabs button{flex:1;padding:10px 4px;background:var(--card);color:var(--mt);border:1px solid var(--line)}.tabs button.on{background:var(--g);color:#04130a}
+.pts{font-size:46px;font-weight:800;color:var(--g);line-height:1}.mt{color:var(--mt);font-size:13px}
+.li{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.li:last-child{border:0}
+.lbr{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}.lbr .rk{width:30px;font-weight:800;color:var(--mt)}.lbr.top .rk{color:var(--g)}.lbr.me{background:#0f2415;border-radius:8px;padding:9px 8px}.lbr b{margin-left:auto;color:var(--g)}
+.qr{background:#fff;padding:6px;border-radius:8px;width:90px;height:90px;flex:0 0 90px}.qr svg{width:100%;height:100%}
+img.po{width:100%;border-radius:12px;display:block;margin-top:8px}
+#t{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:var(--g);color:#04130a;padding:10px 16px;border-radius:10px;font-weight:700;display:none;z-index:9}
+.bad{color:var(--bad)}.c{text-align:center}
+</style></head><body><div class="w">
+<header><img id="logo" alt="" style="display:none"><h1 id="shop">MKS TYRE<small>MEMBER POINT</small></h1></header>
+<div id="app"></div></div><div id="t"></div>
+<script>
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const f=n=>Number(n||0).toLocaleString('en-MY');
+let T=localStorage.mks_t||'',cf={shop:'MKS TYRE',rp:100,rr:1},busy=false,cur=null,tab='ahli';
+const rm=p=>(p/cf.rp*cf.rr).toFixed(2);
+function toast(m){const t=$('#t');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2600)}
+function brand(c){cf={...cf,...c};$('#shop').innerHTML=esc(cf.shop)+'<small>MEMBER POINT</small>';const l=$('#logo');if(cf.logo){l.src=cf.logo;l.style.display='block'}else l.style.display='none'}
+async function API(a,d={}){
+ const r=await fetch('/api',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({a,t:T,...d})});
+ const j=await r.json().catch(()=>({}));
+ if(r.status===401&&a!=='login'){T='';localStorage.removeItem('mks_t');loginUI();throw new Error('Sila log masuk')}
+ if(!r.ok)throw new Error(j.e||'Ralat');return j}
+const shrink=(file,w,type)=>new Promise(res=>{const i=new Image();i.onload=()=>{const s=Math.min(1,w/i.width),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);res(c.toDataURL(type,.82))};i.src=URL.createObjectURL(file)});
+
+/* ===== CUSTOMER ===== */
+function home(code){
+ app.innerHTML=`<div class="card"><label>Masukkan kod khas pada kad member anda</label><input id="cc" placeholder="MKS-XXXXXX" value="${esc(code||'')}" autocapitalize="characters"><button id="cb" style="width:100%">Masuk</button></div><div id="cr"></div><p class="c mt" style="margin-top:28px"><a href="#" id="sl">Staff</a></p>`;
+ $('#cb').onclick=check;$('#cc').onkeydown=e=>e.key==='Enter'&&check();$('#sl').onclick=e=>{e.preventDefault();T?staffUI():loginUI()};
+ if(code)check();
+}
+async function check(){
+ const c=$('#cc').value.trim(),r=$('#cr');if(!c)return;
+ try{const d=await API('cust',{code:c});brand(d.cfg);cust(d,r)}catch(e){r.innerHTML=`<div class="card bad">${esc(e.message)}</div>`}
+}
+function cust(d,r){
+ const L=(l)=>l.length?l.map((x,i)=>`<div class="lbr ${i<3?'top':''} ${x.me?'me':''}"><span class="rk">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</span><span>${esc(x.n)}${x.me?' (anda)':''}</span><b>${f(x.p)}</b></div>`).join(''):'<div class="mt">Belum ada data.</div>';
+ const po=d.poster&&d.poster.img?`<div class="card"><b>${esc(d.poster.title)}</b><img class="po" src="${esc(d.poster.img)}" alt=""></div>`:'';
+ r.innerHTML=`<div class="card c"><div class="mt">Hai, ${esc(d.name)}</div><div class="pts">${f(d.points)}</div><div class="mt">point anda • bernilai RM ${rm(d.points)}</div><div class="mt" style="margin-top:6px">Bulan ini: ${f(d.mp)} point${d.rank?' • Ranking #'+d.rank:''}</div></div>${po}
+ <div class="card"><b style="color:var(--g)">🏆 Papan Pendahulu</b><div class="mt" style="margin:4px 0 10px">${esc(cf.prize||'')}</div>
+ <div class="tabs"><button class="on" id="t1">Bulan Ini (${esc(d.month)})</button><button id="t2">Sepanjang Masa</button></div><div id="lbx">${L(d.lm)}</div></div>`;
+ $('#t1').onclick=()=>{$('#t1').className='on';$('#t2').className='';$('#lbx').innerHTML=L(d.lm)};
+ $('#t2').onclick=()=>{$('#t2').className='on';$('#t1').className='';$('#lbx').innerHTML=L(d.la)};
+}
+
+/* ===== STAFF ===== */
+function loginUI(){
+ app.innerHTML=`<div class="card"><label>Password staff</label><input id="pw" type="password"><button id="lg" style="width:100%">Log Masuk</button></div><p class="c"><a href="/">← Kembali</a></p>`;
+ const go=async()=>{try{const r=await API('login',{pw:$('#pw').value});T=r.t;localStorage.mks_t=T;staffUI()}catch(e){toast(e.message)}};
+ $('#lg').onclick=go;$('#pw').onkeydown=e=>e.key==='Enter'&&go();
+}
+function staffUI(){
+ const TB=[['ahli','Ahli'],['baru','Baru'],['exp','Data'],['set','Tetapan']];
+ app.innerHTML=`<div class="tabs">${TB.map(([k,n])=>`<button class="${tab===k?'on':''}" data-t="${k}">${n}</button>`).join('')}</div><div id="v"></div><p class="c mt"><a href="#" id="lo">Log keluar</a> • <a href="/">Paparan customer</a></p>`;
+ document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;staffUI()});
+ $('#lo').onclick=e=>{e.preventDefault();T='';localStorage.removeItem('mks_t');home()};
+ ({ahli:vAhli,baru:vBaru,exp:vExp,set:vSet})[tab]();
+}
+async function vAhli(){
+ $('#v').innerHTML=`<div class="card"><label>Kod khas kad member</label><div class="row"><input id="sc" placeholder="Taip / scan kod" autocapitalize="characters"><button id="sb">Cari</button></div></div><div id="mem"></div><div class="card" id="lst"><label>Terkini</label></div>`;
+ $('#sb').onclick=()=>openM($('#sc').value);$('#sc').onkeydown=e=>e.key==='Enter'&&openM(e.target.value);
+ try{const r=await API('recent');$('#lst').innerHTML='<label>Terkini</label>'+(r.l.map(m=>`<div class="li" data-c="${esc(m.c)}"><span>${esc(m.n)}<div class="mt">${esc(m.c)}</div></span><b style="color:var(--g)">${f(m.p)}</b></div>`).join('')||'<div class="mt">Belum ada ahli.</div>');
+  document.querySelectorAll('[data-c]').forEach(x=>x.onclick=()=>openM(x.dataset.c))}catch(e){}
+ if(cur)openM(cur);
+}
+async function openM(c){c=String(c||'').trim().toUpperCase();if(!c)return;
+ try{const r=await API('get',{code:c});cur=c;renderM(r.m)}catch(e){$('#mem').innerHTML=`<div class="card bad">${esc(e.message)}</div>`}}
+function renderM(m){
+ const log=(m.log||[]).slice(0,8);
+ $('#mem').innerHTML=`<div class="card"><div class="row" style="align-items:center"><div><b style="font-size:18px">${esc(m.name)}</b><div class="mt">${esc(cur)} ${m.phone?'• '+esc(m.phone):''} ${m.plate?'• '+esc(m.plate):''}</div></div><div class="qr" id="qr"></div></div>
+ <div style="margin:12px 0"><div class="pts">${f(m.points)}</div><div class="mt">point • RM ${rm(m.points)} • jumlah belanja RM ${f(m.total)}</div></div>
+ <label>Jumlah pembelian (RM)</label><div class="row"><input id="amt" type="number" inputmode="decimal" min="0" step="0.01"><button id="add">+ Tambah Point</button></div>
+ <label>Tebus point</label><div class="row"><input id="red" type="number" inputmode="numeric" min="0"><button class="o" id="rd">Tebus</button></div>
+ <label>Remark</label><textarea id="rk" rows="3">${esc(m.remark)}</textarea>
+ <div class="row"><button class="o" id="sr">Simpan Remark</button><button class="o" id="ed">Edit Maklumat</button></div></div>
+ <div class="card"><label>Sejarah (8 terkini)</label>${log.map(l=>`<div class="li" style="cursor:default"><span>${new Date(l.t).toLocaleString('ms-MY',{dateStyle:'short',timeStyle:'short'})}<div class="mt">${l.k==='beli'?'Beli RM '+f(l.a):'Tebus'}</div></span><b style="color:${l.p<0?'var(--bad)':'var(--g)'}">${l.p>0?'+':''}${f(l.p)}</b></div>`).join('')||'<div class="mt">Belum ada transaksi.</div>'}</div>`;
+ try{const z=qrcode(0,'M');z.addData(location.origin+'/?c='+cur);z.make();$('#qr').innerHTML=z.createSvgTag(3)}catch(x){}
+ $('#add').onclick=()=>{const a=parseFloat($('#amt').value);if(!(a>0))return toast('Masukkan jumlah RM');mut('buy',{amt:a},r=>'+'+f(r.m.log[0].p)+' point')};
+ $('#rd').onclick=()=>{const p=Math.floor($('#red').value);if(!(p>0))return toast('Masukkan point');if(p>m.points)return toast('Point tak cukup');if(confirm('Tebus '+p+' point = RM '+rm(p)+' ?'))mut('redeem',{pts:p},()=>'Berjaya tebus RM '+rm(p))};
+ $('#sr').onclick=()=>mut('save',{remark:$('#rk').value},()=>'Remark disimpan');
+ $('#ed').onclick=()=>{const n=prompt('Nama',m.name);if(n===null)return;const p=prompt('No. telefon',m.phone||'');if(p===null)return;const l=prompt('No. plat',m.plate||'');if(l===null)return;mut('save',{name:n,phone:p,plate:l},()=>'Dikemas kini')};
+}
+async function mut(a,d,msg){if(busy)return;busy=true;try{const r=await API(a,{code:cur,...d});renderM(r.m);toast(msg(r))}catch(e){toast(e.message||'Gagal')}busy=false}
+function vBaru(){
+ $('#v').innerHTML=`<div class="card"><label>Kod khas pada kad (kosongkan untuk jana automatik)</label><input id="k" autocapitalize="characters"><label>Nama</label><input id="n"><label>No. telefon</label><input id="p" inputmode="tel"><label>No. plat kereta (pilihan)</label><input id="l"><button id="go" style="width:100%">Daftar Member</button></div>`;
+ $('#go').onclick=async()=>{if(busy)return;busy=true;
+  try{const r=await API('reg',{code:$('#k').value,name:$('#n').value,phone:$('#p').value,plate:$('#l').value});cur=r.code;tab='ahli';toast('Berdaftar: '+r.code);staffUI()}
+  catch(e){toast(e.message)}busy=false}
+}
+const tx=v=>{v=String(v??'');return /^[=+\-@]/.test(v)?"'"+v:v};
+const csv=rows=>'\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');
+function dl(name,text,ty='text/csv'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:ty}));a.download=name;a.click()}
+function vExp0(){
+ $('#v').innerHTML=`<div class="card"><b>Eksport data untuk pihak management</b><p class="mt">Fail CSV boleh dibuka dengan Excel / Google Sheets.</p><button id="e1" style="width:100%;margin-bottom:8px">Muat turun Senarai Ahli (CSV)</button><button id="e2" class="o" style="width:100%">Muat turun Transaksi (CSV)</button></div>`;
+ const run=async(fn)=>{if(busy)return;busy=true;toast('Menyediakan data...');try{const r=await API('export');fn(r.l)}catch(e){toast(e.message)}busy=false};
+ const d=new Date().toISOString().slice(0,10);
+ $('#e1').onclick=()=>run(l=>dl('ahli-'+d+'.csv',csv([['Kod','Nama','Telefon','No Plat','Point Semasa','Point Dikumpul (jumlah)','Point Bulan Ini','Bulan','Jumlah Belanja RM','Remark','Tarikh Daftar']].concat(l.map(m=>[m.code,tx(m.name),tx(m.phone),tx(m.plate),m.points,m.earned||0,m.mp||0,m.mk||'',m.total||0,tx(m.remark),m.created?new Date(m.created).toISOString().slice(0,10):'']))))) ;
+ $('#e2').onclick=()=>run(l=>dl('transaksi-'+d+'.csv',csv([['Tarikh','Kod','Nama','Jenis','Belanja RM','Point']].concat(l.flatMap(m=>(m.log||[]).map(x=>[new Date(x.t).toISOString().replace('T',' ').slice(0,16),m.code,tx(m.name),x.k==='beli'?'Beli':'Tebus',x.a,x.p]))).sort((a,b)=>String(b[0]).localeCompare(a[0])))));
+}
+function vExp(){vExp0();
+ $('#v').insertAdjacentHTML('beforeend',`<div class="card"><b>Backup & Pemulihan</b><p class="mt">Sistem simpan salinan penuh automatik setiap hari (30 hari terkini). Muat turun salinan dan simpan di Google Drive juga.</p><button id="b1" style="width:100%;margin-bottom:8px">Muat turun Backup Penuh (JSON)</button><button id="b2" class="o" style="width:100%;margin-bottom:8px">Backup Sekarang</button><label>Pulihkan dari fail backup</label><input id="b3" type="file" accept=".json"><div id="bl" class="mt">Memuatkan...</div></div>`);
+ $('#b1').onclick=()=>bkDown();
+ $('#b2').onclick=async()=>{if(busy)return;busy=true;toast('Membuat backup...');try{const r=await API('backupnow');toast('Backup siap: '+r.n+' ahli');bkList()}catch(e){toast(e.message)}busy=false};
+ $('#b3').onchange=async e=>{const fl=e.target.files[0];if(!fl)return;try{bkRestore({data:JSON.parse(await fl.text())})}catch(x){toast('Fail tidak sah')}};
+ bkList();
+}
+async function bkList(){try{const r=await API('backups');$('#bl').innerHTML=r.l.length?r.l.map(x=>`<div class="li" style="cursor:default"><span>${esc(x.id)}<div class="mt">${x.n??'?'} ahli</div></span><span><a href="#" data-d="${esc(x.id)}">Muat turun</a> • <a href="#" data-r="${esc(x.id)}">Pulihkan</a></span></div>`).join(''):'Belum ada backup tersimpan. Yang pertama dibuat malam ini, atau tekan Backup Sekarang.';
+ document.querySelectorAll('[data-d]').forEach(a=>a.onclick=e=>{e.preventDefault();bkDown(a.dataset.d)});
+ document.querySelectorAll('[data-r]').forEach(a=>a.onclick=e=>{e.preventDefault();bkRestore({id:a.dataset.r})})}catch(e){}}
+async function bkDown(id){if(busy)return;busy=true;toast('Menyediakan...');try{const d=await API('backup',id?{id}:{});dl('backup-'+(id||new Date().toISOString().slice(0,10))+'.json',JSON.stringify(d),'application/json')}catch(e){toast(e.message)}busy=false}
+async function bkRestore(p){if(busy)return;if(prompt('PERHATIAN: data ahli akan ditulis ganti dengan backup ini. Taip PULIH untuk sahkan')!=='PULIH')return;busy=true;toast('Memulihkan...');try{const r=await API('restore',p);toast('Siap: '+r.n+' ahli dipulihkan')}catch(e){toast(e.message)}busy=false}
+async function vSet(){
+ $('#v').innerHTML='<div class="card mt">Memuatkan...</div>';
+ let s;try{s=await API('settings')}catch(e){return}
+ let c=s.cfg,p=s.poster;
+ $('#v').innerHTML=`<div class="card"><b>Tetapan Umum</b><label>Nama kedai</label><input id="s1" value="${esc(c.shop)}">
+ <label>Point setiap RM1 belanja</label><input id="s2" type="number" step="0.1" value="${c.earn}">
+ <div class="row"><div><label>Tebus: point</label><input id="s3" type="number" value="${c.rp}"></div><div><label>= RM</label><input id="s4" type="number" step="0.1" value="${c.rr}"></div></div>
+ <label>Mesej contest / hadiah (papar pada customer)</label><input id="s5" value="${esc(c.prize)}">
+ <label>Logo</label><input id="s6" type="file" accept="image/*"><button id="ss" style="width:100%">Simpan Tetapan</button></div>
+ <div class="card"><b>Poster / Promosi (lucky draw dll)</b><label><input type="checkbox" id="p1" ${p.on?'checked':''} style="width:auto;margin-right:6px">Papar kepada member</label><label>Tajuk</label><input id="p2" value="${esc(p.title)}"><label>Gambar poster</label><input id="p3" type="file" accept="image/*">${p.img?`<img class="po" src="${esc(p.img)}">`:''}<button id="ps" style="width:100%">Simpan Poster</button></div>`;
+ $('#ss').onclick=async()=>{try{const fl=$('#s6').files[0];const n={shop:$('#s1').value,earn:$('#s2').value,rp:$('#s3').value,rr:$('#s4').value,prize:$('#s5').value,logo:fl?await shrink(fl,320,'image/png'):c.logo};await API('setcfg',{cfg:n});brand(n);toast('Tetapan disimpan');vSet()}catch(e){toast(e.message)}};
+ $('#ps').onclick=async()=>{try{const fl=$('#p3').files[0];await API('setposter',{poster:{on:$('#p1').checked,title:$('#p2').value,img:fl?await shrink(fl,1000,'image/jpeg'):p.img}});toast('Poster disimpan');vSet()}catch(e){toast(e.message)}};
+}
+/* boot */
+(async()=>{try{const r=await API('pub');brand(r)}catch(e){}home(new URLSearchParams(location.search).get('c')||'')})();
+</script></body></html>
